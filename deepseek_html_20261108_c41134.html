@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LINVISUALS — Визуальный клиент для Minecraft</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: #050208;
+    color: #e6edf3;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow-x: hidden;
+  }
+
+  /* Космическое свечение */
+  .glow {
+    position: fixed;
+    top: -20%; left: 50%;
+    transform: translateX(-50%);
+    width: 1000px; height: 1000px;
+    background: radial-gradient(circle, rgba(168,85,247,0.15), rgba(88,28,135,0.05) 40%, transparent 70%);
+    filter: blur(80px);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* Звездный фон */
+  .stars {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background-image: 
+      radial-gradient(1px 1px at 10% 20%, #fff, transparent),
+      radial-gradient(1px 1px at 30% 60%, #a855f7, transparent),
+      radial-gradient(2px 2px at 70% 30%, #fff, transparent),
+      radial-gradient(1px 1px at 90% 80%, #a855f7, transparent),
+      radial-gradient(1.5px 1.5px at 50% 90%, #fff, transparent);
+    background-size: 200px 200px;
+    opacity: 0.4;
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  header {
+    position: relative; z-index: 1;
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 24px 40px;
+    max-width: 1200px; margin: 0 auto; width: 100%;
+  }
+
+  .logo {
+    display: flex; align-items: center; gap: 12px;
+    font-size: 24px; font-weight: 900; letter-spacing: 2px;
+    text-transform: uppercase;
+    background: linear-gradient(90deg, #e879f9, #a855f7, #c084fc);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    text-shadow: 0 0 20px rgba(168,85,247,0.4);
+  }
+
+  nav a {
+    color: #a78bfa; text-decoration: none; margin-left: 28px;
+    font-size: 15px; font-weight: 500;
+    transition: color .3s, text-shadow .3s;
+  }
+  nav a:hover { color: #fff; text-shadow: 0 0 10px #a855f7; }
+
+  main {
+    position: relative; z-index: 1; flex: 1;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    text-align: center; padding: 60px 20px 80px;
+  }
+
+  .badge {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: rgba(168,85,247,0.1);
+    border: 1px solid rgba(168,85,247,0.4);
+    color: #d8b4fe; font-size: 13px; font-weight: 600;
+    padding: 8px 16px; border-radius: 999px; margin-bottom: 30px;
+    box-shadow: 0 0 20px rgba(168,85,247,0.2);
+  }
+  .badge .dot {
+    width: 8px; height: 8px; border-radius: 50%; background: #d8b4fe;
+    box-shadow: 0 0 12px #d8b4fe;
+    animation: pulse 1.8s infinite;
+  }
+  @keyframes pulse { 0%,100%{opacity:1; transform:scale(1);} 50%{opacity:.5; transform:scale(0.8);} }
+
+  h1 {
+    font-size: clamp(38px, 7vw, 68px);
+    font-weight: 900; letter-spacing: -1px; line-height: 1.1;
+    margin-bottom: 24px;
+    text-transform: uppercase;
+  }
+  
+  h1 span {
+    background: linear-gradient(135deg, #f0abfc, #a855f7, #7e22ce);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    display: inline-block;
+    text-shadow: 0 0 40px rgba(168,85,247,0.5);
+  }
+
+  .subtitle {
+    color: #a1a1aa; font-size: clamp(16px, 2.4vw, 19px);
+    max-width: 600px; line-height: 1.6; margin-bottom: 40px;
+  }
+
+  /* Единственная большая кнопка скачивания */
+  .download-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #7e22ce, #a855f7, #c084fc);
+    background-size: 200% 200%;
+    border: 1px solid #d8b4fe;
+    border-radius: 16px;
+    padding: 22px 64px;
+    text-decoration: none;
+    color: #fff;
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    transition: all .4s ease;
+    box-shadow: 0 8px 30px rgba(168,85,247,0.4);
+    animation: gradientShift 4s ease infinite;
+    margin-bottom: 24px;
+  }
+
+  @keyframes gradientShift {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+
+  .download-btn:hover {
+    transform: translateY(-3px) scale(1.02);
+    box-shadow: 0 12px 50px rgba(168,85,247,0.7);
+    border-color: #fff;
+  }
+
+  .meta {
+    color: #6b7280; font-size: 14px; margin-bottom: 80px;
+  }
+  .meta a { color: #c084fc; text-decoration: none; transition: color .2s; }
+  .meta a:hover { color: #fff; text-shadow: 0 0 10px #a855f7; }
+
+  /* ================= БЛОК ПРЕИМУЩЕСТВ ================= */
+  .features-section {
+    position: relative; z-index: 1;
+    max-width: 1200px; margin: 0 auto; width: 100%;
+    padding: 40px 40px 100px;
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+    gap: 30px;
+    align-items: start;
+  }
+
+  .features-header {
+    text-align: left;
+    padding-top: 20px;
+  }
+
+  .features-header h2 {
+    font-size: clamp(36px, 4vw, 52px);
+    font-weight: 800;
+    line-height: 1.1;
+    margin-bottom: 20px;
+    color: #fff;
+  }
+
+  .features-header p {
+    color: #a1a1aa;
+    font-size: 16px;
+    line-height: 1.6;
+    max-width: 320px;
+  }
+
+  .features-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+  }
+
+  .feature-card {
+    background: #0f0f0f;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    padding: 32px;
+    text-align: left;
+    transition: transform .3s ease, border-color .3s ease, box-shadow .3s ease;
+  }
+
+  .feature-card:hover {
+    transform: translateY(-4px);
+    border-color: rgba(168,85,247,0.3);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+  }
+
+  .feature-card .card-title {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 16px;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 16px;
+  }
+
+  .feature-card .card-icon {
+    width: 20px; height: 20px;
+    display: flex; align-items: center; justify-content: center;
+    color: #e6edf3;
+  }
+
+  .feature-card .card-icon svg {
+    width: 100%; height: 100%;
+    fill: currentColor;
+  }
+
+  .feature-card p {
+    color: #a1a1aa;
+    font-size: 14.5px;
+    line-height: 1.65;
+  }
+
+  /* ================= БЛОК FAQ (Аккордеон) ================= */
+  .faq-section {
+    position: relative; z-index: 1;
+    max-width: 800px; margin: 0 auto; width: 100%;
+    padding: 40px 20px 100px;
+  }
+
+  .faq-section h2 {
+    font-size: clamp(28px, 4vw, 38px);
+    font-weight: 800;
+    color: #fff;
+    margin-bottom: 40px;
+    text-align: center;
+  }
+
+  /* Карточка вопроса */
+  .faq-item {
+    background: rgba(15, 8, 25, 0.6);
+    border: 1px solid rgba(168,85,247,0.15);
+    border-radius: 12px;
+    margin-bottom: 16px;
+    overflow: hidden;
+    backdrop-filter: blur(8px);
+    transition: border-color .3s;
+  }
+  
+  .faq-item:hover {
+    border-color: rgba(168,85,247,0.4);
+  }
+
+  /* Кнопка (заголовок вопроса) */
+  .faq-question {
+    width: 100%;
+    background: none;
+    border: none;
+    padding: 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    color: #f3e8ff;
+    font-size: 17px;
+    font-weight: 700;
+    text-align: left;
+    font-family: inherit;
+    transition: background .2s;
+  }
+
+  .faq-question:hover {
+    background: rgba(168,85,247,0.05);
+  }
+
+  /* Нумерация в кружке */
+  .faq-number {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    background: linear-gradient(135deg, #7e22ce, #a855f7);
+    color: white;
+    border-radius: 50%;
+    font-size: 14px;
+    margin-right: 14px;
+    flex-shrink: 0;
+    font-weight: 700;
+    box-shadow: 0 0 10px rgba(168,85,247,0.4);
+  }
+
+  /* Стрелочка */
+  .faq-icon {
+    width: 20px;
+    height: 20px;
+    transition: transform .3s ease;
+    flex-shrink: 0;
+    fill: #a78bfa;
+  }
+
+  /* Активное состояние (открыто) */
+  .faq-item.active .faq-icon {
+    transform: rotate(180deg);
+  }
+
+  /* Блок с ответом (скрыт по умолчанию) */
+  .faq-answer {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.4s ease-out;
+  }
+
+  .faq-answer-inner {
+    padding: 0 24px 24px 24px;
+    color: #a1a1aa;
+    font-size: 15px;
+    line-height: 1.6;
+    padding-left: 66px; /* Выравнивание текста под заголовком, учитывая номер */
+  }
+
+  .faq-answer-inner strong {
+    color: #d8b4fe;
+  }
+
+  .faq-answer-inner code {
+    background: rgba(168,85,247,0.2);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: monospace;
+    color: #e879f9;
+  }
+
+  /* Адаптив */
+  @media (max-width: 1024px) {
+    .features-section {
+      grid-template-columns: 1fr;
+      gap: 40px;
+    }
+    .features-header { text-align: center; padding-top: 0; }
+    .features-header p { margin: 0 auto; }
+  }
+
+  @media (max-width: 768px) {
+    .features-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @media (max-width: 600px) {
+    header { padding: 20px; flex-direction: column; gap: 20px; }
+    nav a { margin: 0 10px; }
+    .download-btn { padding: 18px 32px; font-size: 17px; width: 100%; }
+    .features-section { padding: 20px 20px 60px; }
+    .feature-card { padding: 24px; }
+    .faq-section { padding: 20px 20px 60px; }
+    .faq-answer-inner { padding-left: 24px; } /* На мобилках сбрасываем отступ */
+    .faq-number { width: 24px; height: 24px; font-size: 12px; margin-right: 10px; }
+  }
+
+  footer {
+    position: relative; z-index: 1; text-align: center;
+    padding: 30px 20px; color: #6b7280; font-size: 13px;
+    border-top: 1px solid rgba(168,85,247,0.1);
+    background: rgba(5, 2, 8, 0.8);
+  }
+  footer a { color: #a78bfa; text-decoration: none; margin: 0 12px; transition: color .2s; }
+  footer a:hover { color: #fff; text-shadow: 0 0 10px #a855f7; }
+  .disclaimer { margin-top: 12px; font-size: 11px; color: #4b5563; }
+</style>
+</head>
+<body>
+  <div class="glow"></div>
+  <div class="stars"></div>
+
+  <header>
+    <div class="logo">
+      LINVISUALS
+    </div>
+    <nav>
+      <a href="#download">Скачать</a>
+      <a href="#features">Преимущества</a>
+      <a href="#faq">FAQ</a>
+      <a href="https://discord.gg/UBdJKRTNn" target="_blank">Discord</a>
+    </nav>
+  </header>
+
+  <main>
+    <div class="badge"><span class="dot"></span> Версия 1.16.5 / 1.21.11 · Обновлено в 2026</div>
+
+    <h1><span>LINVISUALS</span><br>Визуальный клиент</h1>
+
+    <p class="subtitle">
+      Погрузись в Minecraft с новым уровнем графики. Кристальная четкость, космические шейдеры и интерфейс, который не хочется закрывать.
+    </p>
+
+    <!-- Ссылка на скачивание заменена на workupload -->
+    <a class="download-btn" id="download" href="https://workupload.com/file/mpTzg2QYmcR" target="_blank" rel="noopener noreferrer">
+      Скачать
+    </a>
+
+    <p class="meta">Версия 1.16.5 / 1.21.11 · <a href="#">Что нового</a></p>
+  </main>
+
+  <section class="features-section" id="features">
+    <div class="features-header">
+      <h2>Наши<br>преимущества</h2>
+      <p>Мы кратко изложили вам то, что вы гарантированно получите после покупки нашего клиента.</p>
+    </div>
+
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="card-title">
+          <span class="card-icon">
+            <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+          </span>
+          Красивый внешний вид
+        </div>
+        <p>В нашем клиенте присутствует большое количество визуальных функций, которые сделают вашу игру более красочной. А так же вы можете настроить оформление клиента под себя, сделав его по настоящему красивым.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="card-title">
+          <span class="card-icon">
+            <svg viewBox="0 0 24 24"><path d="M3 17v2h6v-2H3zM3 5v2h10V5H3zm10 16v-2h8v-2h-8v-2h-2v6h2zM7 9v2H3v2h4v2h2V9H7zm14 4v-2H11v2h10zm-6-4h2V7h4V5h-4V3h-2v6z"/></svg>
+          </span>
+          Настраиваемость
+        </div>
+        <p>В нашем клиенте вы можете настроить практически любую функцию под себя, а так же использовать конфигурации других пользователей. Благодаря этому вы сможете использовать наш клиент на максимуме его возможностей.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="card-title">
+          <span class="card-icon">
+            <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+          </span>
+          Оптимизация
+        </div>
+        <p>Мы постоянно улучшаем оптимизацию нашего клиента и самой игры. Благодаря этому вы сможете запустить наш клиент даже на слабых компьютерах.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="card-title">
+          <span class="card-icon">
+            <svg viewBox="0 0 24 24"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
+          </span>
+          Частые обновления
+        </div>
+        <p>Мы регулярно обновляем функционал в нашем клиенте, добавляя новые функции, а так же совершенствуя уже существующие. Благодаря этому наш клиент имеет преимущества под все существующие сервера.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="faq-section" id="faq">
+    <h2>Часто задаваемые вопросы</h2>
+    
+    <div class="faq-item">
+      <button class="faq-question">
+        <div style="display: flex; align-items: center;">
+          <span class="faq-number">1</span>
+          Что такое LINVISUALS?
+        </div>
+        <svg class="faq-icon" viewBox="0 0 24 24"><path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z"/></svg>
+      </button>
+      <div class="faq-answer">
+        <div class="faq-answer-inner">
+          <p>LINVISUALS — это лучший визуальный клиент для Minecraft. Мы создали его для тех, кто устал от скучной стандартной графики и хочет получить максимум эстетического удовольствия от игры. Кристально четкая картинка, продвинутые шейдеры, уникальный интерфейс и полная оптимизация — всё это делает игру по-настоящему красивой.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="faq-item">
+      <button class="faq-question">
+        <div style="display: flex; align-items: center;">
+          <span class="faq-number">2</span>
+          Это вирус? Почему вы не обманете меня?
+        </div>
+        <svg class="faq-icon" viewBox="0 0 24 24"><path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z"/></svg>
+      </button>
+      <div class="faq-answer">
+        <div class="faq-answer-inner">
+          <p>Абсолютно нет. <strong>LINVISUALS — это безопасный продукт.</strong> Нам нет никакого смысла заражать ваши компьютеры или обманывать вас. Наша главная цель — построить долгосрочную репутацию и создать комьюнити, которое будет возвращаться к нам снова и снова. Обман и вирусы уничтожат наш проект в один миг, а нам важна репутация и доверие каждого пользователя. Мы открыты, прозрачны и гарантируем безопасность ваших данных.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="faq-item">
+      <button class="faq-question">
+        <div style="display: flex; align-items: center;">
+          <span class="faq-number">3</span>
+          Какие версии Minecraft поддерживаются?
+        </div>
+        <svg class="faq-icon" viewBox="0 0 24 24"><path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z"/></svg>
+      </button>
+      <div class="faq-answer">
+        <div class="faq-answer-inner">
+          <p>Клиент поддерживает широкий спектр версий, включая 1.16.5 и 1.21.11. Выбор нужной версии происходит прямо внутри клиента при запуске — вам не нужно скачивать разные файлы.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="faq-item">
+      <button class="faq-question">
+        <div style="display: flex; align-items: center;">
+          <span class="faq-number">4</span>
+          Как установить клиент?
+        </div>
+        <svg class="faq-icon" viewBox="0 0 24 24"><path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z"/></svg>
+      </button>
+      <div class="faq-answer">
+        <div class="faq-answer-inner">
+          <p>Всё максимально просто! Скачайте файл по кнопке выше, откройте его (запустите <code>.exe</code>), и установщик сам всё подкачает и установит. Вам не нужно вручную искать папки или кидать файлы в <code>.minecraft</code> — программа сделает всё за вас. Если возникнут вопросы, заходите в наш <a href="https://discord.gg/UBdJKRTNn" target="_blank" style="color: #c084fc; text-decoration: none;">Discord</a>.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    © 2026 LINVISUALS
+    <a href="#">Политика конфиденциальности</a>
+    <a href="https://discord.gg/UBdJKRTNn" target="_blank">Discord</a>
+    <a href="#">Связаться</a>
+    <div class="disclaimer">Не связан с Mojang Studios или Microsoft. Minecraft является торговой маркой Mojang AB.</div>
+  </footer>
+
+  <script>
+    const faqItems = document.querySelectorAll('.faq-item');
+
+    faqItems.forEach(item => {
+      const question = item.querySelector('.faq-question');
+      const answer = item.querySelector('.faq-answer');
+
+      question.addEventListener('click', () => {
+        const isActive = item.classList.contains('active');
+
+        faqItems.forEach(otherItem => {
+          otherItem.classList.remove('active');
+          otherItem.querySelector('.faq-answer').style.maxHeight = null;
+        });
+
+        if (!isActive) {
+          item.classList.add('active');
+          answer.style.maxHeight = answer.scrollHeight + 'px';
+        }
+      });
+    });
+  </script>
+</body>
+</html>
